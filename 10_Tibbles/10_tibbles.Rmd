@@ -1,0 +1,115 @@
+---
+title: "10 Tibbles Exercise Solutions"
+author: "Sean Angiolillo"
+date: "17 March 2018"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(tidyverse)
+```
+
+## 10.5 Exercises
+
+1. How can you tell if an object is a tibble? (Hint: try printing `mtcars`, which is a regular data frame).
+
+Printing a dataframe like `mtcars` to the console prints the entire dataframe, whereas printing a tibble gives only the first 10 rows with the classes of each column on top.
+
+```{r}
+class(mtcars)
+class(as_tibble(mtcars))
+```
+
+2. Compare and contrast the following operations on a data.frame and equivalent tibble. What is different? Why might the default data frame behaviours cause you frustration?
+
+We can test for differences by turning `df` into a tibble and running the same operations.
+
+```{r eval=FALSE}
+df <- data.frame(abc = 1, xyz = "a")
+df$x
+df[, "xyz"]
+df[, c("abc", "xyz")]
+
+tbl <- as_tibble(df)
+tbl$x
+tbl[, "xyz"]
+tbl[, c("abc", "xyz")]
+```
+
+Dataframes partially match column names so `df$x` returns the `xyz` column as a vector, whereas `tbl$x` will throw an error for an unknown column. Because it only selects one column, `df[, "xyz"]` returns a vector whereas `tbl[, "xyz"]` returns a tibble. I believe `df[, c("abc", "xyz")]` and `tbl[, c("abc", "xyz")]` are equivalent with the exception of course that the first remains a dataframe while the latter is a tibble.
+
+3. If you have the name of a variable stored in an object, e.g. `var <- "mpg"`, how can you extract the reference variable from a tibble?
+
+You can use double bracket `[[` but not `$`. This same behavior seems to apply for both dataframes and tibbles. Note that `tbl[[var]]` returns a vector and not a tibble.
+
+```{r}
+var <- "mpg"
+
+mtcars[[var]] # returns a vector
+mtcars$var # NULL
+
+tbl <- as_tibble(mtcars)
+tbl[[var]] # returns a vector
+tbl$var # unknown column
+```
+
+
+4. Practice referring to non-syntactic names in the following data frame by:
+
+```{r}
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+```
+
+* Extracting the variable called 1.
+
+```{r}
+annoying$`1` # returns a vector
+```
+
+* Plotting a scatterplot of 1 vs 2.
+
+```{r}
+ggplot(annoying, aes(x = `1`, y = `2`)) + geom_point()
+```
+
+
+* Creating a new column called 3 which is 2 divided by 1.
+
+```{r}
+annoying %>% mutate(`3` = `2` / `1`)
+```
+
+* Renaming the columns to one, two and three.
+
+```{r}
+annoying %>% 
+    mutate(`3` = `2` / `1`) %>%
+    rename(one = `1`, two = `2`, three = `3`)
+```
+
+5. What does `tibble::enframe()` do? When might you use it?
+
+`enframe()` converts named atomic vectors or lists to two-column data frames. For unnamed vectors, the natural sequence is used as name column.
+
+```{r}
+enframe(c(a = 5, b = 7))
+```
+
+6. What option controls how many additional column names are printed at the footer of a tibble?
+
+`n_extra` controls the number of additional column names printed at the footer of a tibble.
+
+```{r eval=FALSE}
+print(nycflights13::flights) # by default gives all extra column names in footer
+print(nycflights13::flights, n_extra = 2) # will give 2 additional column names in footer
+```
+
