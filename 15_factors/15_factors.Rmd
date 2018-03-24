@@ -1,0 +1,194 @@
+---
+title: "15 Factors Exercises Solutions"
+author: "Sean Angiolillo"
+date: "24 March 2018"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(tidyverse)
+library(forcats)
+```
+
+## 15.3.1 Exercise
+
+1. Explore the distribution of `rincome` (reported income). What makes the default bar chart hard to understand? How could you improve the plot?
+
+On the default bar chart, the overlapping x-axis labels are difficult to read.
+
+```{r}
+ggplot(gss_cat, aes(x = rincome)) + 
+    geom_bar()
+```
+
+One option is to change the x-axis labels to a vertical orientation.
+
+```{r}
+ggplot(gss_cat, aes(x = rincome)) + 
+    geom_bar() + 
+    theme(axis.text.x = element_text(angle = 90))
+```
+
+If you don't want to turn your head to read the labels though, you might prefer switching the coordinates of the entire plot.
+
+```{r}
+ggplot(gss_cat, aes(x = fct_relevel(rincome, "Not applicable"))) + 
+    geom_bar() + 
+    coord_flip()
+```
+
+2. What is the most common relig in this survey? What’s the most common partyid?
+
+The most common `relig` is Protestant and the most common `partyid` is Independent.
+
+```{r}
+gss_cat %>% count(relig, sort = TRUE)
+gss_cat %>% count(partyid, sort = TRUE)
+```
+
+3. Which relig does denom (denomination) apply to? How can you find out with a table? How can you find out with a visualisation?
+
+If we count by `relig` and `denom`, we can see the number of responses for each combination. Many religions, such as Catholic, have only one `denom` entry: "Not applicable". And that total matches their total in the above table. Protestant is the `relig` where `denom` applies for the vast majority. But it also looks like those responding "Christian" may have been given the chance to answer.
+
+```{r}
+gss_cat %>% count(relig, denom)
+```
+
+If we plot this table in a scatterplot, mapping size to frequency we can see how Protestant occupies almost all of these responses.
+
+```{r}
+gss_cat %>%
+  count(relig, denom) %>%
+  ggplot(aes(x = relig, y = denom, size = n)) +
+        geom_point() +
+        theme(axis.text.x = element_text(angle = 90))
+```
+
+
+## 15.4.1 Exercises
+
+1. There are some suspiciously high numbers in `tvhours`. Is the mean a good summary?
+
+Quite a few values are actually 24 so suspicious indeed.
+
+```{r}
+tail(sort(gss_cat$tvhours), 25)
+```
+
+We can see these suspiciously high numbers in a histogram. The right skew pulls the blue mean line to the right of the median in red. This makes the mean a poor summary.
+
+```{r}
+ggplot(gss_cat, aes(x = tvhours)) + 
+    geom_histogram(binwidth = 1) + 
+    geom_vline(xintercept = median(gss_cat$tvhours, na.rm = TRUE), color = "red") +
+    geom_vline(xintercept = mean(gss_cat$tvhours, na.rm = TRUE), color = "blue")
+```
+
+2. For each factor in `gss_cat` identify whether the order of the levels is arbitrary or principled.
+
+We can quickly find the factor variables in the dataset with the `keep` function.
+
+```{r}
+keep(gss_cat, is.factor) %>% names()
+```
+
+* `marital` has some ordering to it. It ends with fully married and works back through various stages of being married at one point to never being married.
+
+```{r}
+levels(gss_cat$marital)
+```
+
+* `race` is ordered by increasing frequency with "Not applicable" coming last.
+
+```{r}
+table(gss_cat$race)
+```
+
+* `rincome` is ordered from the highest income group to the lowest, with non-dollar groups coming first, except for "Not applicable" which is oddly last.
+
+```{r}
+levels(gss_cat$rincome)
+```
+
+* `partyid` is ordered from far right to far left with unknown answers coming first.
+
+```{r}
+levels(gss_cat$partyid)
+```
+
+* `relig`: seems to be arbitrary.
+
+```{r}
+levels(gss_cat$relig)
+```
+
+* `denom` also appears to be arbitrary.
+
+```{r}
+levels(gss_cat$denom)
+```
+
+3. Why did moving “Not applicable” to the front of the levels move it to the bottom of the plot?
+
+Factors are ultimately encoded as integers so moving it to the front of of the levels gives it a value of 1. This moves it to the bottom of the plot when we execute the following code:
+
+```{r}
+rincome_summary <- gss_cat %>%
+  group_by(rincome) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n()
+  )
+ggplot(rincome_summary, aes(age, fct_relevel(rincome, "Not applicable"))) +
+  geom_point()
+```
+
+## 15.5.1 Exercises
+
+1. How have the proportions of people identifying as Democrat, Republican, and Independent changed over time?
+
+First we have to remove levels we don't need and collapse those we do into the correct categories. Then we can mutate a proportion and plot. At that point the plot is fine, but we can reorder the legend to match the order of the lines as they are plotted using `fct_reorder2()`. Once we've done that, we can adjust the legend title to something more reasonable.
+
+```{r}
+gss_cat %>%
+    filter(!partyid %in% c("No answer", "Don't know", "Other party")) %>%
+    mutate(partyid = fct_collapse(partyid,
+        rep = c("Strong republican", "Not str republican"),
+        ind = c("Ind,near rep", "Independent", "Ind,near dem"),
+        dem = c("Not str democrat", "Strong democrat")
+    )) %>%
+    count(year, partyid) %>%
+    group_by(year) %>%
+    mutate(prop = n / sum(n)) %>%
+    ggplot(aes(x = year, y = prop, 
+               color = fct_reorder2(partyid, year, prop))) +
+        geom_point() +
+        geom_line() +
+        labs(color = "partyid")
+```
+
+
+2. How could you collapse `rincome` into a small set of categories?
+
+We can't use `fct_lump` in this case because there's an inherent order. The most reasonable tool then is `fct_collapse` where we can create larger groups of income and one for all non-dollar answers. The higher denomination categories don't need to be recoded if we stick by $5k per category but it's nice to rename them to fit the trend.
+
+```{r}
+gss_cat %>% 
+    mutate(rincome = fct_collapse(rincome,
+        Other = c("No answer", "Don't know", "Refused", "Not applicable"),
+        `<$5k` = c("Lt $1000","$1000 to 2999","$3000 to 3999","$4000 to 4999"),
+        `$5-10k` = c("$5000 to 5999","$6000 to 6999","$7000 to 7999","$8000 to 9999"),
+        `$10-15k` = c("$10000 - 14999"),
+        `15-20k` = c("$15000 - 19999"),
+        `20-25k` = c("$20000 - 24999"),
+        `>$25k` = c("$25000 or more"))) %>%
+    count(rincome)
+```
+
