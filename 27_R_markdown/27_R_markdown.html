@@ -191,7 +191,8 @@ $(document).ready(function () {
 knitr::kable(
     diamonds %&gt;%
         arrange(-carat) %&gt;%
-        head(20)
+        head(20),
+    format = &quot;markdown&quot;
 )</code></pre>
 <table>
 <thead>

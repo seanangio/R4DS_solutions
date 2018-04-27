@@ -84,7 +84,8 @@ library(tidyverse)
 knitr::kable(
     diamonds %>%
         arrange(-carat) %>%
-        head(20)
+        head(20),
+    format = "markdown"
 )
 ```
 
