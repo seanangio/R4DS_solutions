@@ -299,10 +299,8 @@ ggplot(presi, aes(start, name_id, colour = party)) +
     scale_colour_manual(values = c(Republican = "red", Democratic = "blue")) +
     scale_y_discrete(NULL) +
     scale_x_date(NULL, breaks = election_years, date_labels = "'%y") +
-    labs(
-        title = "Presidential Terms by Party"
-    ) +
-    theme(panel.grid.minor = element_blank())
+    labs(title = "Presidential Terms by Party", color = "Party") +
+    theme(panel.grid.minor = element_blank()) 
 ```
 
 ![](28_graphics_for_communication_files/figure-html/unnamed-chunk-14-1.png)<!-- -->

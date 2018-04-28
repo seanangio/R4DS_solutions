@@ -263,10 +263,8 @@ ggplot(presi, aes(start, name_id, colour = party)) +
     scale_colour_manual(values = c(Republican = "red", Democratic = "blue")) +
     scale_y_discrete(NULL) +
     scale_x_date(NULL, breaks = election_years, date_labels = "'%y") +
-    labs(
-        title = "Presidential Terms by Party"
-    ) +
-    theme(panel.grid.minor = element_blank())
+    labs(title = "Presidential Terms by Party", color = "Party") +
+    theme(panel.grid.minor = element_blank()) 
 ```
 
 4. Use `override.aes` to make the legend on the following plot easier to see.
